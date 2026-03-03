@@ -35,10 +35,86 @@ HDC랩스 NOVA 3rd 레포지토리입니다.
 * **개발**: 2~5주차 - 기능별 스프린트 개발 및 하드웨어(Arduino) 연동
 * **테스트 및 배포**: 6주차 - Redis 기반 성능 최적화 및 CI/CD 배포 자동화
 
+---
+
 ## 3. 팀 구성
 
-* **발표 및 총괄**: 안창석 (Full-stack / AI Pipeline)
-* **개발팀**: TEAM 파이브가이즈 (Backend, Frontend, IoT, Infra 협업)
+## 👥 TEAM 파이브가이즈
+
+<p align="center">
+  Backend · Frontend · IoT · Infra · AI Pipeline
+</p>
+
+---
+
+### 안창석 | Team Leader
+<p align="center">
+  <a href="https://github.com/아이디">
+    <img src="https://github-readme-stats.vercel.app/api?username=아이디&show_icons=true&theme=default" height="150"/>
+  </a>
+</p>
+
+- 🔹 관리자 인증 시스템 및 보안 로직 수립  
+- 🔹 민원 및 관리비 결제(PDF/Excel) 구현  
+- 🔹 QueryDSL 기반 DB 조회 성능 최적화  
+- 🔹 관리자 전용 웹 대시보드 구현  
+
+---
+
+### 이희원 | AI & Design
+<p align="center">
+  <a href="https://github.com/아이디">
+    <img src="https://github-readme-stats.vercel.app/api?username=아이디&show_icons=true&theme=default" height="150"/>
+  </a>
+</p>
+
+- 🔹 AI 파이프라인 설계 및 총괄 관리  
+- 🔹 Gemini, OpenRouter 기반 챗봇 구축  
+- 🔹 Pinecone 활용 RAG 파이프라인 구축  
+- 🔹 MQTT 디바이스 제어 연동 및 앱 챗봇 UI 구현  
+- 🔹 서비스 GUI 및 물리 구조물 설계  
+
+---
+
+### 양준길 | Infra & Backend
+<p align="center">
+  <a href="https://github.com/아이디">
+    <img src="https://github-readme-stats.vercel.app/api?username=아이디&show_icons=true&theme=default" height="150"/>
+  </a>
+</p>
+
+- 🔹 CI/CD 파이프라인 및 Docker Compose 구축  
+- 🔹 JWT 및 OAuth 2.0 기반 로그인 시스템 구현  
+- 🔹 시설 예약, QR 출입 시스템, FCM 푸시 알림 구현  
+- 🔹 부하 테스트 및 API 성능 병목 개선  
+
+---
+
+### 천경신 | Safety & IoT
+<p align="center">
+  <a href="https://github.com/아이디">
+    <img src="https://github-readme-stats.vercel.app/api?username=아이디&show_icons=true&theme=default" height="150"/>
+  </a>
+</p>
+
+- 🔹 화재 및 가스 감지 로직 및 MQTT 통신 구축  
+- 🔹 Hugging Face 기반 음성인식 아키텍처 구현  
+- 🔹 통합 관제 대시보드 및 공지사항 웹/앱 기능 개발  
+- 🔹 웹 인터페이스 디자인 지원  
+
+---
+
+### 최우영 | IoT & Hardware
+<p align="center">
+  <a href="https://github.com/아이디">
+    <img src="https://github-readme-stats.vercel.app/api?username=아이디&show_icons=true&theme=default" height="150"/>
+  </a>
+</p>
+
+- 🔹 디바이스 상태 API 및 환경 센서 데이터 연동  
+- 🔹 사용자 설정 모드 스케줄러(Automation) 구현  
+- 🔹 홈/디바이스 제어 UI 및 OpenWeather API 호출  
+- 🔹 IoT 물리 구조물 설계 및 하드웨어 구축
 
 ---
 
@@ -171,4 +247,5 @@ HDC랩스 NOVA 3rd 레포지토리입니다.
 * **기술 적합성**: 실시간성은 MQTT, 고성능은 Redis 등 문제 해결에 최적인 기술 스택 선정의 중요성 체감
 
 ---
+
 
