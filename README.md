@@ -47,6 +47,16 @@
 
 <img width="1095" height="602" src="https://github.com/user-attachments/assets/15d59f28-63a9-4854-995c-c6c7a48aa72d">
 
+> **Client & Server:** React Native App의 요청을 Nginx를 거쳐 Spring 서버에서 로직 처리.    
+> **Data & Cache:** RDB로 MariaDB / JWT 토큰 및 OpenWeather API 데이터 캐싱으로 Redis 활용.    
+> **External Service:** 예약 관련 알림을 위해 FCM과 연동한 실시간 푸시 알림 제공.    
+
+#### 🔄 CI/CD Pipeline & Monitoring
+> **CI/CD 자동화:** GitHub Actions 활용 Merge 시 자동 빌드 및 테스트 수행 **(CI)**, On-Premise 서버로 자동 배포 **(CD)**.    
+> **컨테이너 오케스트레이션:** Docker Compose를 활용 API 서버, DB, Nginx, 모니터링 툴을 컨테이너 단위 관리 및 배포합니다.    
+> **모니터링 및 성능 측정:**    
+>  - Prometheus, Grafana 기반 서버 상태 및 리소스 시각화 & 모니터링.    
+>  - k6 활용 부하 테스트 환경 구축, p95, p99 응답 지표를 주기적으로 측정하고 병목 탐색.    
 ---
 
 
@@ -54,57 +64,105 @@
 <img width="793" height="491" alt="fs102" src="https://github.com/user-attachments/assets/058c2d55-4491-49fe-8c1b-481249db80dd" />
 
 > 전체 서비스 중 **입주민(Member/Resident)** 과 **시설 예약(Facility/Reservation)** 핵심 도메인을 설계했습니다.  
-> **입주민** : JWT 기반 인증 및 권한 관리  
-> **시설 예약**: 시설별 운영 시간, 예약 가능 인원, 실시간 상태값 관리  
+> **Member** : 모바일 App 이용자 / 로그인 시 사용되며, JWT 기반 인증 및 권한 부여    
+> **Resident** :  입주민이 회원가입 시 인증되는 정보, 관리자가 관리하는 실 거주자 Table    
+> **Facility** : 입주민이 사용하는 커뮤니티 시설, 예약 가능 여부 / 이용 시간    
+> **Reservation** : 입주민이 예약한 시설 예약 정보, 예약 비용 / 이용 시간 / 예약자 정보 / QR Token 등
 
 ## 5. 🚀 핵심 기능 & 흐름(Flow)
-### 🔐 1. JWT & Redis 기반 인증 시스템
-보안성과 사용자 경험을 모두 잡기 위해 Access Token(단기) + Refresh Token(장기) 구조를 채택했습니다.
+### 🔐 1. JWT & Redis 기반 입주민 로그인 기능
+**로그인 구조**    
+   로그인 인증을 위한 계정 정보(Member) 와 아파트 거주 증명 정보(Resident)로 나누어진 구조로,    
+   아파트 거주 인증을 마친 후에 로그인을 할 수 있도록 설계했습니다.    
+이후 로그인 관리는 Access Token 과 Refresh Token 를 사용하여 인증 정보를 관리했습니다.    
 
-코드 스니펫
-sequenceDiagram
-    participant User as 입주민 (App)
-    participant Server as Spring Boot
-    participant DB as MariaDB/Redis
+**인증 흐름 (Authentication Flows)**    
+  A. 일반 로그인 (ID/PW)
+   1. 사용자가 loginId와 password로 로그인 요청을 보냅니다.
+   2. MemberAuthenticationProvider에서 자격 증명을 검증합니다.
+   3. MemberDetailsService가 Member 정보와 해당 회원이 소속된 apartmentId, hoId를 함께 조회하여 MemberDetails를 생성합니다.
+   4. 검증 성공 시, JwtProvider를 통해 Access/Refresh 토큰을 발급합니다.
 
-    User->>Server: 로그인 요청 (ID/PW)
-    Server->>DB: 사용자 정보 확인
-    Server->>Server: JWT 생성 (Access/Refresh)
-    Server->>DB: Refresh Token 저장 (Redis)
-    Server-->>User: 토큰 발급
+  B. 소셜 로그인 (OAuth2)
+   1. 외부 플랫폼(Google, Naver 등)을 통해 인증을 진행합니다.
+   2. CustomOAuth2UserService 에서 사용자 정보를 수신하고, 기존 회원 여부를 확인합니다.
+   3. OAuthSuccessHandler에서 인증 성공 후 JWT 토큰을 발급하고 클라이언트로 리다이렉트합니다.
+
+코드로 인해 생성된 Access/Refresh 토큰은 Redis에 기간을 두고 저장되며, Provider 검증 시 비교에 활용됩니다.
+
 ### 📅 2. QR 기반 시설 예약 및 체크인
-QueryDSL을 사용하여 동적인 예약 상태 조회를 구현하고, 실시간성 확보를 위해 QR 로직을 연동했습니다.
+아파트 단지 내 공용 시설(체육시설, 독서실 등)을 예약하고, 발급된 QR 코드를 시설 카메라에 인식해 체크인하는 시스템입니다.
 
-코드 스니펫
-flowchart LR
-    A[시설 및 시간 선택] --> B{예약 가능 여부 확인}
-    B -- 가능 --> C[예약 DB 등록]
-    B -- 불가 --> D[에러 메시지]
-    C --> E[고유 ID 기반 QR 생성]
-    E --> F[IoT 리더기 스캔]
-    F --> G[서버 검증 및 문 개방]
+**도메인 모델 구조 (Domain Hierarchy)**    
+  시설과 예약 데이터는 다음과 같은 계층 구조로 설계되어 있습니다.
+
+
+   - `Facility`: 아파트 전용 시설 (예: 헬스장, 커뮤니티 센터, 도서관)
+   - `Space`: 시설 내 개별 공간 (예: 헬스장 GX룸, 도서관 1번 좌석, 테니스 1번 코트)
+   - `Reservation`: 특정 사용자의 공간 이용 예약 정보 및 QR 토큰 관리
+
+
+**QR 체크인 흐름**    
+  예약한 시설의 이용을 위해 qr_token 기반의 체크인 시스템을 운영합니다.
+
+   - 예약 생성: 예약 시 고유한 qr_token이 생성되며 클라이언트에 전달됩니다.
+   - QR 인증: 시설 카메라를 통해 qr_token을 서버에 전달 후 검증여부에 따라 이용자의 출입을 제어합니다.
+   - 예약 상태 : CONFIRMED(확정) → IN_USE(이용 중) → COMPLETED(완료)의 생명주기를 가집니다.
+
+
+**자동 스케줄러 및 알림 (Scheduler & Notification)**    
+  Scheduler를 통해 예약 상태가 자동적으로 변하게 하고, 상태에 따라 사용자에게 알림을 보내도록 했습니다.
+
+   - 자동 상태 업데이트: ReservationScheduler가 2분 간격으로 실행되며 다음 작업을 수행합니다.
+       - 입장 시작: 시작 시간 10분 전 예약 상태를 IN_USE로 자동 변경하고, 알림을 보내 입실을 안내합니다.
+       - 종료 예정 알림: 이용 종료 10분 전 사용자의 푸시 알림(NotificationService)을 통해 퇴실을 안내합니다.
+       - 만료 처리: 이용 종료 10분 후 예약을 COMPLETED로 변경하고 QR 토큰을 만료시킵니다.
+   - 취소 및 환불: 사용자가 직접 취소할 경우 상태를 즉시 CANCELLED로 변경하고 리소스를 즉시 해제합니다.
+
+
+**기술적 최적화 (Technical Highlights)**    
+   - 인덱싱 전략: 대량의 예약 데이터에도 조회 성능을 확보하기 위해 status와 start_time/end_time의 복합 인덱스를 설정했습니다.
+   - 비동기 알림: 알림 발송 시 @Async 설정을 활용하여 스케줄러의 메인 로직이 차단되지 않도록 설계했습니다.
+
 ## 6. 🛠 핵심 트러블 슈팅
-⚡ Redis 도입을 통한 인증 성능 및 보안 강화
-문제: JWT만 사용 시 토큰 만료 전 탈취 위험이 있고, DB(RDB)에 Refresh Token을 저장할 경우 매 요청마다 발생하는 조회 쿼리로 인해 오버헤드 발생.
+### ⚡  JWT 보안 및 관리 구조 최적화 (RTR 기법 도입)
+[문제 상황]
+  모바일 앱 환경에서 사용자의 로그인 편의성을 위해 토큰 만료 시간을 길게 설정할 경우, Access Token 탈취 시 보안에 취약해지는 리스크가 있었습니다. 반면, 만료     
+  시간을 짧게 설정하면 사용자가 자주 로그아웃되는 불편함이 발생했습니다.
 
-해결:
 
-Redis를 도입하여 Token 저장소로 활용.
+[분석 및 해결]
+- 이중 저장소 전략: 서버 측에서는 Redis를 활용해 Refresh Token의 유효 기간을 엄격히 관리하고, 모바일 클라이언트(React Native)에서는 SecureStore를 사용하여    
+ 토큰을 안전하게 암호화 저장했습니다.
+- RTR(Refresh Token Rotation) 적용:
+   - Access Token 만료 시간을 5분으로 매우 짧게 설정하여 탈취 시의 위험 범위를 최소화했습니다.
+   - 토큰 재발급 요청 시, 기존의 Refresh Token을 단 한 번만 사용 가능하도록 처리하고 새로운 Access/Refresh 토큰 쌍을 발급하는 RTR 방식을 도입했습니다.       
+   - 이를 통해 Refresh Token이 탈취되더라도 공격자가 재사용하는 시점에 서버에서 이상 징후(이미 사용된 토큰)를 감지하고 즉시 모든 세션을 무효화할 수 있는     
+     구조를 구축했습니다.
 
-메모리 기반 조회로 응답 속도 개선 및 TTL 설정을 통해 만료된 토큰 자동 폐기.
 
-로그아웃 시 Redis 내 토큰을 즉시 삭제하는 'Blacklist' 로직을 추가하여 보안성 극대화.
+### 🔄 외부 API 병목 탐색 및 Redis 캐싱을 통한 88% 성능 개선
+[문제 상황]
+  앱 실행 후 메인 화면 진입 시, 로그인 초기 화면을 불러오는 과정에서 총 1초 ~ 3초 이상의 로딩 지연의 문제가 발견되었습니다.
 
-🔄 QueryDSL을 이용한 예약 동시성 및 검색 최적화
-문제: 여러 입주민이 동시에 특정 시설을 예약할 때 발생하는 데이터 무결성 이슈와 복잡한 필터 조건(시설명, 날짜, 예약상태 등) 검색 시 쿼리 복잡도 증가.
+[분석 과정]
+- AOP 기반 성능 모니터링: 특정 API의 문제인지 파악하기 위해 AOP를 구현하여 모든 컨트롤러의 실행 시간을 측정했습니다.
+   - [API PERF] GET /api/v1/weather - OpenWeatherService.getOpenWeather :    
+     812ms 로그를 통해 외부 API(OpenWeatherMap) 호출 구간이 전체 응답 시간의 50% 이상 차지하는 병목 지점임을 확정했습니다.
+- 비동기 처리 최적화: 기존의 순차적인 호출 방식을 WebClient와 Mono.zip을 활용한 Non-blocking IO로 전환하여 외부 API 응답 대기 시간을
+ 단축했습니다.
 
-해결:
 
-QueryDSL 도입으로 가독성 있는 동적 쿼리 작성 및 컴파일 시점 에러 방지.
+[최종 해결: Redis 캐싱 전략]
+- 날씨 데이터의 특성상 실시간성이 중요하지만, 한 번 검색하면 1-2시간 동안 변하지 않는 특성이 있어 Redis 캐싱을 도입했습니다.
+- 동일한 위도/경도 좌표에 대해 30분간의 캐시 유효시간을 설정하여, 불필요한 외부 API 호출을 줄였습니다.
 
-비즈니스 로직 레벨에서 BooleanExpression을 활용해 예약 가능 여부를 1차 검증하고, DB 유니크 제약 조건을 통해 중복 예약을 원천 차단.
 
-📂 부록
-팀 전체 README: LINK_TO_TEAM_README
+[결과]
+50명 이상의 사용자가 날씨 호출 API를 불러온다는 가정 하에 나온 평균 속도를 측정했습니다.
+- p95 응답 속도: 476ms → 53ms (약 88.8% 개선)
+- 외부 API 호출 비용 절감 및 네트워크 장애 시에도 캐시된 데이터를 통해 안정적인 서비스 제공이 가능해졌습니다.
 
-데모 영상: LINK_TO_VIDEO
+
+### 부록
+[README_TEAM 버전 문서](https://github.com/wnsrlf0721/HDC-NOVA-3rd)
