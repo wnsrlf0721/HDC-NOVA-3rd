@@ -1,11 +1,15 @@
 # 🏢 스마트 아파트 통합관리 플랫폼
-> 아파트 입주민, 관리인 위한 App / Web 서비스
+> 아파트 입주민, 관리인 위한 App / Web 서비스이다.   
+> **"아파트 입주민"** 은 App으로 아파트 시설 예약, 공지사항, 관리비 조회 등 전반적인 주거 생활에 대한 편의 기능을 이용할 수 있다.   
+> **"관리인"** 은 브라우저 Web으로 아파트 입주민 관리, 화재 상황 감지, 관리비 항목 관리 등 입주민들에게 적용되는 관리 항목들을 설정할 수 있다.   
+> 각 사용자 권한에 따라 입주민은 편리한 주거 서비스를 위해 App 기반 서비스 제공, 관리인은 Web 기반 전체적인 통계 서비스 제공에 초점을 맞추었다.
 <br />
 
 ## 1. 📅 제작 기간 & 인원 별 역할
 > **2026.01.14 - 02.28**  
 > **5인 팀 프로젝트**  
-> Front/Back 분야 별 구분 없이 기능 별로 역할을 나누어 **API, 페이지, IoT** 풀스택 분담
+> Front/Back 분야 별 구분 없이 기능 별로 역할을 나누었음.
+> 인원 한 명 당 기능의 **Web/App 페이지, 백엔드 API, IoT 제어** 등 전반적인 풀스택 분담
 > ### 핵심 역할
 > - 기능 구현: **입주민 로그인, 커뮤니티 시설 예약, QR 출입 제어, FCM 알림**
 > - 서비스 배포: **On-Premise 기반 서버 인프라 배포 및 운영 관리**
@@ -33,6 +37,8 @@
 > ### IoT Device
 > ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
 > ![RaspberryPi](https://img.shields.io/badge/Raspberry_Pi-4B-A22846?logo=raspberrypi&logoColor=white)
+> ![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?logo=opencv&logoColor=white)
+> ![Numpy](https://img.shields.io/badge/NumPy-013243?logo=numpy&logoColor=white)
 
 > ### DevOps / Infra
 > ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
@@ -91,6 +97,12 @@
 코드로 인해 생성된 Access/Refresh 토큰은 Redis에 기간을 두고 저장되며, Provider 검증 시 비교에 활용됩니다.
 
 ### 📅 2. QR 기반 시설 예약 및 체크인
+
+<img width="322" height="305" alt="image" src="https://github.com/user-attachments/assets/83fa820f-61ce-473d-864f-7a7d683d4e88" />   
+
+![nova3차_최종2](https://github.com/user-attachments/assets/11d2c3be-6569-4568-8313-44b8029056b2)
+
+
 아파트 단지 내 공용 시설(체육시설, 독서실 등)을 예약하고, 발급된 QR 코드를 시설 카메라에 인식해 체크인하는 시스템입니다.
 
 **도메인 모델 구조 (Domain Hierarchy)**    
